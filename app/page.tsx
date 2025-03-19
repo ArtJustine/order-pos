@@ -374,7 +374,7 @@ export default function OrderSystem() {
       <div className="w-[205px] bg-white border-r flex flex-col">
         <div className="p-4 border-b">
           <Image
-            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Start-MC8dkzlgD3Lo6WogNa1QZH5dUdR58J.png"
+            src="logo1.svg"
             alt="Hoptix Logo"
             width={100}
             height={40}
