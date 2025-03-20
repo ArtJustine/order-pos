@@ -1,13 +1,13 @@
 "use client"
 
 import Image from "next/image"
-import { Search, ChevronDown, Bell, Settings, X, Download } from 'lucide-react'
+import { Search, ChevronDown, Bell, Settings, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import React from "react"
 // Add these imports at the top of the file
-import { CalendarIcon, Edit, Trash2 } from 'lucide-react'
+import { CalendarIcon, Edit, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -123,40 +123,6 @@ const locationData = {
     "Mya",
     "Bobby Berry",
   ],
-  Centralia: [
-    "Vanessa Palomares",
-    "Maleia Harmon",
-    "Cailee Reid",
-    "Gus Robles-Diaz",
-    "Bailey Chambers",
-    "Christian Phillips",
-    "Nick Lock",
-    "Kyle Johnstone",
-    "Maya Haines",
-    "Amelia Venard",
-    "Tara Calvert",
-    "Jaysten Barada",
-    "Daniel Abarta",
-    "Brenna Sullivan",
-    "Scarlette Hopper",
-    "Chelsea Sampson",
-    "Tyson Ervin",
-    "Jackie Palomares",
-    "Sarah Vanhousen",
-    "Jesusa Francisco",
-    "Kadin Wilson",
-    "Brody Turner",
-    "Destannhy Hildago",
-    "Mirella Vasquez",
-    "Joshua Ritzman",
-    "Maleia Harmon",
-    "David Romero",
-    "Jonas Howard",
-    "Jillian Clevenger",
-    "Megan Sund",
-    "Kyle Johnstone",
-],
-
 }
 
 // Add this function after the locationData declaration
@@ -196,30 +162,6 @@ const getSizeOptions = (category) => {
   }
 }
 
-// Define a type for event data
-type EventData = {
-  date: Date;
-  startTime: string;
-  endTime: string;
-  employee: string;
-  location: string;
-  items: any[];
-  summary: {
-    itemsNotUpdated: number;
-    upsell: {
-      chance: number;
-      offered: number;
-      successful: number;
-    };
-    upsize: {
-      chance: number;
-      offered: number;
-      successful: number;
-    };
-    totalItems: number;
-  };
-}
-
 export default function OrderSystem() {
   // Add state for tracking order summary at the top of the OrderSystem component
   const [orderSummary, setOrderSummary] = React.useState({
@@ -239,7 +181,6 @@ export default function OrderSystem() {
 
   // Add state for time dropdowns at the top of the OrderSystem component
   const [startTime, setStartTime] = React.useState("09:00")
-  const [startTimeChanged, setStartTimeChanged] = React.useState(false)
   const [endTime, setEndTime] = React.useState("17:00")
   const [showStartTimeDropdown, setShowStartTimeDropdown] = React.useState(false)
   const [showEndTimeDropdown, setShowEndTimeDropdown] = React.useState(false)
@@ -259,11 +200,22 @@ export default function OrderSystem() {
 
   // Add a new state variable for event count after the other state declarations in OrderSystem
   const [eventCount, setEventCount] = React.useState(0)
-  
-  // Add state to store submitted events
-  const [submittedEvents, setSubmittedEvents] = React.useState<EventData[]>([])
 
+  // Add a new state for storing completed events right after the eventCount state
+  const [completedEvents, setCompletedEvents] = React.useState([])
+
+  // Add a formValid state after the completedEvents state declaration
+  const [formValid, setFormValid] = React.useState(false)
+
+  // Add this useEffect to check if the form is valid whenever dependencies change
+  React.useEffect(() => {
+    // Form is valid if startTime is set and at least one order item exists
+    setFormValid(startTime !== "" && orderItems.length > 0)
+  }, [startTime, orderItems])
+
+  // Add a searchTerm state after the activeCategory state
   const [activeCategory, setActiveCategory] = React.useState("blizzards")
+  const [searchTerm, setSearchTerm] = React.useState("")
 
   const handleCategoryChange = (category) => {
     setActiveCategory(category)
@@ -271,13 +223,33 @@ export default function OrderSystem() {
 
   // Function to get products for the active category
   const getProducts = () => {
-    return productData[activeCategory] || []
+    let products = []
+
+    // If "all" category is selected, combine all products
+    if (activeCategory === "all") {
+      Object.values(productData).forEach((categoryProducts) => {
+        products = [...products, ...categoryProducts]
+      })
+    } else {
+      // Otherwise, get products for the active category
+      products = productData[activeCategory] || []
+    }
+
+    // Filter products by search term if one exists
+    if (searchTerm.trim() !== "") {
+      const searchLower = searchTerm.toLowerCase()
+      products = products.filter((product) => product.name.toLowerCase().includes(searchLower))
+    }
+
+    return products
   }
 
   // Check if toppings are applicable for the current category
   const hasToppings = (category) => {
     return ["blizzards", "blended", "cones"].includes(category)
   }
+
+  // Add this function after the hasToppings function in the OrderSystem component
 
   // Function to handle location change
   const handleLocationChange = (location) => {
@@ -290,12 +262,6 @@ export default function OrderSystem() {
   const handleEmployeeChange = (employee) => {
     setSelectedEmployee(employee)
     setShowEmployeeDropdown(false)
-  }
-
-  // Function to handle start time change
-  const handleStartTimeChange = (e) => {
-    setStartTime(e.target.value)
-    setStartTimeChanged(true)
   }
 
   // Replace the updateOrderSummary function with this enhanced version
@@ -339,6 +305,19 @@ export default function OrderSystem() {
       // Update total items
       newSummary.totalItems += quantity
 
+      // Count add-ons as additional items
+      if (category === "chicken" || category === "sandwich") {
+        // Count sides as additional items if selected
+        if (additionalInfo.selectedSide && additionalInfo.selectedSide !== "None") {
+          newSummary.totalItems += quantity
+        }
+
+        // Count drinks as additional items if applicable
+        if ((category === "chicken" && size === "Both") || size === "Drink") {
+          newSummary.totalItems += quantity
+        }
+      }
+
       // For items with "No" size
       if (size === "No") {
         newSummary.itemsNotUpdated += quantity
@@ -377,52 +356,66 @@ export default function OrderSystem() {
     })
   }
 
-  // Update the handleRemoveItem function to also update the orderSummary
+  // Add these functions after the updateOrderSummary function
+  // Modify the handleRemoveItem function to update the order summary
   const handleRemoveItem = (itemId) => {
-    // Find the item to be removed
-    const itemToRemove = orderItems.find(item => item.id === itemId)
-    
+    const itemToRemove = orderItems.find((item) => item.id === itemId)
+
     if (itemToRemove) {
-      // Update the order summary by subtracting the item's values
-      setOrderSummary(prev => {
+      // Update the order summary by subtracting this item's statistics
+      setOrderSummary((prev) => {
         const newSummary = { ...prev }
-        
-        // Subtract from total items
+
+        // Decrease total items
         newSummary.totalItems -= itemToRemove.quantity
-        
-        // If it was a "No" size item, update itemsNotUpdated
+
+        // Subtract add-ons as additional items
+        if (itemToRemove.category === "chicken" || itemToRemove.category === "sandwich") {
+          // Subtract sides as additional items if selected
+          if (itemToRemove.selectedSide && itemToRemove.selectedSide !== "None") {
+            newSummary.totalItems -= itemToRemove.quantity
+          }
+
+          // Subtract drinks as additional items if applicable
+          if (itemToRemove.category === "chicken" && (itemToRemove.size === "Both" || itemToRemove.size === "Drink")) {
+            newSummary.totalItems -= itemToRemove.quantity
+          }
+        }
+
+        // For items with "No" size
         if (itemToRemove.size === "No") {
           newSummary.itemsNotUpdated -= itemToRemove.quantity
-          
+
           // Update upsize stats
           newSummary.upsize.chance -= itemToRemove.quantity
-          
+
           if (itemToRemove.offeredLarge || itemToRemove.offeredOtherSizes) {
             newSummary.upsize.offered -= itemToRemove.quantity
-            
+
             if (itemToRemove.largeAgreed || itemToRemove.otherSizesAgreed) {
               newSummary.upsize.successful -= itemToRemove.quantity
             }
           }
         }
-        
-        // For blizzards, update upsell stats
+
+        // For blizzards and other items with toppings, update upsell stats
         if (itemToRemove.category === "blizzards" && hasToppings(itemToRemove.category)) {
+          // Upsell chance decreases
           newSummary.upsell.chance -= itemToRemove.quantity
-          
+
           if (itemToRemove.offeredToppings) {
             newSummary.upsell.offered -= itemToRemove.quantity
-            
+
             if (itemToRemove.toppingsAgreed) {
               newSummary.upsell.successful -= itemToRemove.quantity
             }
           }
         }
-        
+
         return newSummary
       })
     }
-    
+
     // Remove the item from orderItems
     setOrderItems((prev) => prev.filter((item) => item.id !== itemId))
   }
@@ -433,24 +426,27 @@ export default function OrderSystem() {
     handleRemoveItem(itemId)
   }
 
-  // Modify the handleSubmitEvent function to store events instead of downloading
+  // Modify the handleSubmitEvent function to increment the event count
+  // Modify the handleSubmitEvent function to store the data instead of downloading
   const handleSubmitEvent = () => {
-    // Create event data object
-    const eventData: EventData = {
+    // Create event data
+    const eventData = {
+      id: eventCount + 1,
       date: eventDate,
       startTime,
       endTime,
       employee: selectedEmployee,
       location: selectedLocation,
-      items: [...orderItems],
-      summary: { ...orderSummary }
+      items: orderItems,
+      summary: orderSummary,
+      csvData: generateCsvData(),
     }
-    
-    // Add to submitted events
-    setSubmittedEvents(prev => [...prev, eventData])
-    
+
+    // Add to completed events
+    setCompletedEvents((prev) => [...prev, eventData])
+
     // Increment event count
-    setEventCount(prevCount => prevCount + 1)
+    setEventCount((prevCount) => prevCount + 1)
 
     // Reset the form
     setOrderItems([])
@@ -469,28 +465,52 @@ export default function OrderSystem() {
       totalItems: 0,
     })
   }
-  
-  // Add a function to handle exporting all events
+
+  // Add a new function to handle exporting events
   const handleExportEvents = () => {
-    if (submittedEvents.length === 0) return
-    
-    // Generate CSV data for all events
-    const csvData = generateCsvDataForAllEvents()
-    
+    if (completedEvents.length === 0) return
+
+    // Combine all CSV data
+    let allCsvData = ""
+    let headers = ""
+
+    completedEvents.forEach((event, index) => {
+      const csvRows = event.csvData.split("\n")
+
+      // For the first event, keep the headers
+      if (index === 0) {
+        headers = csvRows[0]
+        allCsvData = event.csvData
+      } else {
+        // For subsequent events, just add the data row
+        if (csvRows.length > 1) {
+          allCsvData += "\n" + csvRows[1]
+        }
+      }
+    })
+
+    // If no headers were found, use the generated headers
+    if (!headers && completedEvents.length > 0) {
+      allCsvData = generateCsvData()
+    }
+
     // Create a blob and download link
-    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" })
+    const blob = new Blob([allCsvData], { type: "text/csv;charset=utf-8;" })
     const url = URL.createObjectURL(blob)
     const link = document.createElement("a")
     link.href = url
-    link.setAttribute("download", `event_summary_export_${format(new Date(), "yyyy-MM-dd")}.csv`)
+    link.setAttribute("download", `events_summary_${format(new Date(), "yyyy-MM-dd")}.csv`)
     document.body.appendChild(link)
     link.click()
-    
+
     // Clean up
     document.body.removeChild(link)
+
+    // Clear completed events after export
+    setCompletedEvents([])
   }
 
-  const generateCsvData = (event: EventData) => {
+  const generateCsvData = () => {
     // Create CSV header row based on the format provided
     const headers =
       "Entry#,Event Date,ORDER TIME Start Time,ORDER TIME End Time,Count of Sec,Camera,Why was there No Warm Greeting?,Why didn't they upsell?,Why didnt they repeat the order?,Was Customer Loyalty Offered?,Why was there no Thank you?,Was the app scanned for loylaty?,Video Links,Client Employee,Total Count of Ordered Items,Count of Successful Upsell Items,When they offered the Combo and the customer refused did they offer the drink?,Count of items upsold and not upsized,Count of chances to add an item,Chance to offer (Item),How many were offered an Upsell,Offered Item/s,How many was Successful?,Successful Upsell Item"
@@ -498,9 +518,9 @@ export default function OrderSystem() {
     // Create data row
     const data = [
       "1", // Entry#
-      format(event.date, "MM/dd/yyyy"), // Event Date
-      `${event.startTime}:00`, // Start Time with seconds
-      `${event.endTime}:00`, // End Time with seconds
+      format(eventDate, "MM/dd/yyyy"), // Event Date
+      `${startTime}:00`, // Start Time with seconds
+      `${endTime}:00`, // End Time with seconds
       "", // Count of Sec
       "", // Camera
       "", // Why was there No Warm Greeting?
@@ -510,71 +530,26 @@ export default function OrderSystem() {
       "", // Why was there no Thank you?
       "", // Was the app scanned for loylaty?
       "", // Video Links
-      event.employee, // Client Employee
-      event.summary.totalItems, // Total Count of Ordered Items
-      event.summary.upsell.successful, // Count of Successful Upsell Items
+      selectedEmployee, // Client Employee
+      orderSummary.totalItems, // Total Count of Ordered Items
+      orderSummary.upsell.successful, // Count of Successful Upsell Items
       "", // When they offered the Combo and the customer refused, did they offer the drink?
-      event.summary.itemsNotUpdated, // Count of items upsold and not upsized
-      event.summary.upsell.chance, // Count of chances to add an item
+      orderSummary.itemsNotUpdated, // Count of items upsold and not upsized
+      orderSummary.upsell.chance, // Count of chances to add an item
       "", // Chance to offer (Item)
-      event.summary.upsell.offered, // How many were offered an Upsell
-      event.items
+      orderSummary.upsell.offered, // How many were offered an Upsell
+      orderItems
         .filter((i) => i.offeredToppings)
         .map((i) => i.name)
         .join(", "), // Offered Item/s
-      event.summary.upsell.successful, // How many was Successful?
-      event.items
+      orderSummary.upsell.successful, // How many was Successful?
+      orderItems
         .filter((i) => i.toppingsAgreed)
         .map((i) => i.name)
         .join(", "), // Successful Upsell Item
     ].join(",")
 
     return headers + "\n" + data
-  }
-  
-  // Function to generate CSV for all events
-  const generateCsvDataForAllEvents = () => {
-    // Create CSV header row
-    const headers =
-      "Entry#,Event Date,ORDER TIME Start Time,ORDER TIME End Time,Count of Sec,Camera,Why was there No Warm Greeting?,Why didn't they upsell?,Why didnt they repeat the order?,Was Customer Loyalty Offered?,Why was there no Thank you?,Was the app scanned for loylaty?,Video Links,Client Employee,Total Count of Ordered Items,Count of Successful Upsell Items,When they offered the Combo and the customer refused did they offer the drink?,Count of items upsold and not upsized,Count of chances to add an item,Chance to offer (Item),How many were offered an Upsell,Offered Item/s,How many was Successful?,Successful Upsell Item"
-
-    // Create data rows for each event
-    const dataRows = submittedEvents.map((event, index) => {
-      return [
-        index + 1, // Entry#
-        format(event.date, "MM/dd/yyyy"), // Event Date
-        `${event.startTime}:00`, // Start Time with seconds
-        `${event.endTime}:00`, // End Time with seconds
-        "", // Count of Sec
-        "", // Camera
-        "", // Why was there No Warm Greeting?
-        "", // Why didn't they upsell?
-        "", // Why didnt they repeat the order?
-        "", // Was Customer Loyalty Offered?
-        "", // Why was there no Thank you?
-        "", // Was the app scanned for loylaty?
-        "", // Video Links
-        event.employee, // Client Employee
-        event.summary.totalItems, // Total Count of Ordered Items
-        event.summary.upsell.successful, // Count of Successful Upsell Items
-        "", // When they offered the Combo and the customer refused, did they offer the drink?
-        event.summary.itemsNotUpdated, // Count of items upsold and not upsized
-        event.summary.upsell.chance, // Count of chances to add an item
-        "", // Chance to offer (Item)
-        event.summary.upsell.offered, // How many were offered an Upsell
-        event.items
-          .filter((i) => i.offeredToppings)
-          .map((i) => i.name)
-          .join("; "), // Offered Item/s
-        event.summary.upsell.successful, // How many was Successful?
-        event.items
-          .filter((i) => i.toppingsAgreed)
-          .map((i) => i.name)
-          .join("; "), // Successful Upsell Item
-      ].join(",")
-    })
-
-    return headers + "\n" + dataRows.join("\n")
   }
 
   // Add this function after the handleLocationChange function
@@ -591,16 +566,13 @@ export default function OrderSystem() {
     }
   }
 
-  // Check if Submit button should be enabled
-  const isSubmitEnabled = startTimeChanged && orderItems.length > 0
-
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <div className="w-[205px] bg-white border-r flex flex-col">
         <div className="p-4 border-b">
           <Image
-            src="/logo2.svg"
+            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Start-MC8dkzlgD3Lo6WogNa1QZH5dUdR58J.png"
             alt="Hoptix Logo"
             width={100}
             height={40}
@@ -648,12 +620,12 @@ export default function OrderSystem() {
           </nav>
         </div>
         <div className="border-t p-4">
-          <div className="flex items-center text-gray-700 mb-2">
-            <Bell className="w-5 h-5 mr-2" />
+          <div className="flex items-center justify-between text-gray-700 mb-2">
+            <Bell className="w-5 h-5" />
             <span className="text-sm">Notifications</span>
           </div>
-          <div className="flex items-center text-gray-700">
-            <Settings className="w-5 h-5 mr-2" />
+          <div className="flex items-center justify-between text-gray-700">
+            <Settings className="w-5 h-5" />
             <span className="text-sm">Settings</span>
           </div>
         </div>
@@ -685,7 +657,9 @@ export default function OrderSystem() {
             </PopoverContent>
           </Popover>
 
-          
+          <Button variant="outline" className="text-sm">
+            Pause Event
+          </Button>
 
           {/* Replace the Start Time div with this */}
           <div className="relative">
@@ -712,7 +686,7 @@ export default function OrderSystem() {
                     type="time"
                     step="1"
                     value={startTime}
-                    onChange={handleStartTimeChange}
+                    onChange={(e) => setStartTime(e.target.value)}
                     className="mb-2"
                   />
                   <Button size="sm" className="w-full" onClick={() => setShowStartTimeDropdown(false)}>
@@ -759,8 +733,6 @@ export default function OrderSystem() {
             )}
           </div>
 
-          
-
           {/* Replace the Employee dropdown with this */}
           <div className="relative">
             <div
@@ -803,10 +775,6 @@ export default function OrderSystem() {
               </div>
             )}
           </div>
-
-          <Button variant="outline" className="text-sm">
-            Pause Event
-          </Button>
 
           <div className="relative ml-auto">
             <div
@@ -896,7 +864,12 @@ export default function OrderSystem() {
             <div className="ml-auto">
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <Input className="pl-9 w-64 h-8" placeholder="Search" />
+                <Input
+                  className="pl-9 w-64 h-8"
+                  placeholder="Search"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
             </div>
           </TabsList>
@@ -1010,26 +983,27 @@ export default function OrderSystem() {
                 )}
               </div>
 
-              <div className="relative space-y-2">
-                <Button 
-                  className="w-full bg-blue-900 hover:bg-blue-800" 
+              {/* Replace the Submit Event button in the return section with this new code:
+              // Look for the <div className="relative"> containing the Submit Event button
+              // and replace it with the following code: */}
+              <div className="space-y-2">
+                <Button
+                  className="w-full bg-blue-900 hover:bg-blue-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
                   onClick={handleSubmitEvent}
-                  disabled={!isSubmitEnabled}
+                  disabled={!formValid}
                 >
                   Submit Event
                 </Button>
-                
-                <Button 
-                  className="w-full flex items-center justify-center gap-2" 
-                  variant="outline"
+
+                <Button
+                  className="w-full bg-green-700 hover:bg-green-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
                   onClick={handleExportEvents}
-                  disabled={submittedEvents.length === 0}
+                  disabled={completedEvents.length === 0}
                 >
-                  <Download size={16} />
-                  Export Events ({submittedEvents.length})
+                  Export Events ({completedEvents.length})
                 </Button>
-                
-                <div className="absolute bottom-[-90px] right-0 bg-blue-100 text-blue-900 px-3 py-1 rounded-md text-sm font-medium flex items-center">
+
+                <div className="absolute bottom-[-30px] right-0 bg-blue-100 text-blue-900 px-3 py-1 rounded-md text-sm font-medium flex items-center">
                   <span className="mr-1">Events:</span>
                   <span className="bg-blue-900 text-white rounded-full w-6 h-6 flex items-center justify-center">
                     {eventCount}
@@ -1727,3 +1701,4 @@ function ProductCard({ name, image, category, hasToppings, updateOrderSummary })
     </div>
   )
 }
+
