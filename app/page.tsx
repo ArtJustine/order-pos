@@ -857,43 +857,43 @@ export default function OrderSystem() {
           <TabsList className="bg-white border-b w-full justify-start rounded-none h-auto px-4">
             <TabsTrigger
               value="all"
-              className="px-4 py-2 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="px-4 py-2 data-[state=active]:bg-blue-900 data-[state=active]:text-white data-[state=active]:shadow-none hover:bg-[#123358] hover:text-white transition-colors"
             >
               All
             </TabsTrigger>
             <TabsTrigger
               value="blizzards"
-              className="px-4 py-2 data-[state=active]:bg-blue-900 data-[state=active]:text-white data-[state=active]:shadow-none"
+              className="px-4 py-2 data-[state=active]:bg-blue-900 data-[state=active]:text-white data-[state=active]:shadow-none hover:bg-[#123358] hover:text-white transition-colors"
             >
               Blizzards
             </TabsTrigger>
             <TabsTrigger
               value="blended"
-              className="px-4 py-2 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="px-4 py-2 data-[state=active]:bg-blue-900 data-[state=active]:text-white data-[state=active]:shadow-none hover:bg-[#123358] hover:text-white transition-colors"
             >
               Blended
             </TabsTrigger>
             <TabsTrigger
               value="cones"
-              className="px-4 py-2 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="px-4 py-2 data-[state=active]:bg-blue-900 data-[state=active]:text-white data-[state=active]:shadow-none hover:bg-[#123358] hover:text-white transition-colors"
             >
               Cones
             </TabsTrigger>
             <TabsTrigger
               value="chicken"
-              className="px-4 py-2 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="px-4 py-2 data-[state=active]:bg-blue-900 data-[state=active]:text-white data-[state=active]:shadow-none hover:bg-[#123358] hover:text-white transition-colors"
             >
               Chicken Basket
             </TabsTrigger>
             <TabsTrigger
               value="sandwich"
-              className="px-4 py-2 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="px-4 py-2 data-[state=active]:bg-blue-900 data-[state=active]:text-white data-[state=active]:shadow-none hover:bg-[#123358] hover:text-white transition-colors"
             >
               Sandwich
             </TabsTrigger>
             <TabsTrigger
               value="sides"
-              className="px-4 py-2 data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+              className="px-4 py-2 data-[state=active]:bg-blue-900 data-[state=active]:text-white data-[state=active]:shadow-none hover:bg-[#123358] hover:text-white transition-colors"
             >
               Sides
             </TabsTrigger>
@@ -904,8 +904,7 @@ export default function OrderSystem() {
                   className="pl-9 w-64 h-8"
                   placeholder="Search"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+                  onChange={(e) => setSearchTerm(e.target.value)}                />
               </div>
             </div>
           </TabsList>
@@ -1080,6 +1079,24 @@ function ProductCard({ name, image, category, hasToppings, updateOrderSummary })
   const [offeredLargeDrink, setOfferedLargeDrink] = React.useState(false)
   const [largeDrinkAgreed, setLargeDrinkAgreed] = React.useState(false)
 
+    // Add effect to handle clicks outside of size buttons
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if the click was outside a button
+      if (!event.target.closest("button")) {
+        setSelectedSize("")
+      }
+    }
+
+    // Add event listener
+    document.addEventListener("mousedown", handleClickOutside)
+
+    // Clean up
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
+  
   React.useEffect(() => {
     if (!showModal) {
       setOfferedLarge(false)
@@ -1168,7 +1185,10 @@ function ProductCard({ name, image, category, hasToppings, updateOrderSummary })
       </div>
 
       <div className="text-center mb-2">
-        <Button variant="outline" className="bg-white" onClick={handleAddClick}>
+        <Button variant="outline" className="bg-white w-[100px] h-[33px] flex items-center 
+          justify-center hover:bg-[#123358] hover:text-white transition-colors" 
+          onClick={handleAddClick}
+        >
           Add
         </Button>
       </div>
