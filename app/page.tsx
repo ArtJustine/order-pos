@@ -572,7 +572,7 @@ export default function OrderSystem() {
       <div className="w-[205px] bg-white border-r flex flex-col">
         <div className="p-4 border-b">
           <Image
-            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Start-MC8dkzlgD3Lo6WogNa1QZH5dUdR58J.png"
+            src="/logo2.svg"
             alt="Hoptix Logo"
             width={100}
             height={40}
@@ -620,12 +620,12 @@ export default function OrderSystem() {
           </nav>
         </div>
         <div className="border-t p-4">
-          <div className="flex items-center justify-between text-gray-700 mb-2">
-            <Bell className="w-5 h-5" />
+          <div className="flex items-center text-gray-700 mb-2">
+            <Bell className="w-5 h-5 mb-2" />
             <span className="text-sm">Notifications</span>
           </div>
-          <div className="flex items-center justify-between text-gray-700">
-            <Settings className="w-5 h-5" />
+          <div className="flex items-center text-gray-700">
+            <Settings className="w-5 h-5 mb-2" />
             <span className="text-sm">Settings</span>
           </div>
         </div>
@@ -657,9 +657,7 @@ export default function OrderSystem() {
             </PopoverContent>
           </Popover>
 
-          <Button variant="outline" className="text-sm">
-            Pause Event
-          </Button>
+          
 
           {/* Replace the Start Time div with this */}
           <div className="relative">
@@ -775,6 +773,10 @@ export default function OrderSystem() {
               </div>
             )}
           </div>
+
+          <Button variant="outline" className="text-sm">
+            Pause Event
+          </Button>
 
           <div className="relative ml-auto">
             <div
