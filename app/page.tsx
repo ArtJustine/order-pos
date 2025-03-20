@@ -19,16 +19,16 @@ const productData = {
   blizzards: [
     { name: "Oreo Blizzard", image: "/placeholder.svg?height=150&width=150" },
     { name: "Reese's Peanut Buttercup Blizzard", image: "/placeholder.svg?height=150&width=150" },
-    { name: "Butterfinger Blizzard", image: "/placeholder.svg?height=150&width=150" },
-    { name: "M&M Blizzard", image: "/placeholder.svg?height=150&width=150" },
-    { name: "Heath Blizzard", image: "/placeholder.svg?height=150&width=150" },
-    { name: "Snickers Blizzard", image: "/placeholder.svg?height=150&width=150" },
-    { name: "Royal Reese's Fluttermutter", image: "/placeholder.svg?height=150&width=150" },
-    { name: "Royal Ney York Cheesecake", image: "/placeholder.svg?height=150&width=150" },
-    { name: "Chocolate Chip Cookie Dough", image: "/placeholder.svg?height=150&width=150" },
-    { name: "Mint Oreo Blizzard", image: "/placeholder.svg?height=150&width=150" },
+    { name: "Butterfinger Blizzard", image: "/Butterfinger_blizz (1).png?height=150&width=150" },
+    { name: "M&M Blizzard", image: "/mm-blizzard (1).png?height=150&width=150" },
+    { name: "Heath Blizzard", image: "/Heath_blizz.png?height=150&width=150" },
+    { name: "Snickers Blizzard", image: "/Snickers_Blizz.png?height=150&width=150" },
+    { name: "Royal Reese's Fluffernutter", image: "/royal_reese_fluffernutter_blizzard_treat.png?height=150&width=150" },
+    { name: "Royal Ney York Cheesecake", image: "/royal-new-york-cheesecake-strawberry-blizzard.png?height=150&width=150" },
+    { name: "Chocolate Chip Cookie Dough", image: "/chocolate-chip-cookie-dough-blizzard.png?height=150&width=150" },
+    { name: "Mint Oreo Blizzard", image: "/mint-oreo-blizzard-treat.png?height=150&width=150" },
     { name: "Turtle Pecan Blizzard", image: "/placeholder.svg?height=150&width=150" },
-    { name: "Choco Brownie Extreme", image: "/placeholder.svg?height=150&width=150" },
+    { name: "Choco Brownie Extreme", image: "/choco-brownie-extreme-blizzard.png?height=150&width=150" },
   ],
   blended: [
     { name: "Strawberry Smoothie", image: "/placeholder.svg?height=150&width=150" },
@@ -622,7 +622,7 @@ export default function OrderSystem() {
                 <path d="M3 9H21" stroke="currentColor" strokeWidth="2" />
                 <path d="M9 21V9" stroke="currentColor" strokeWidth="2" />
               </svg>
-              Dashboard
+              Monitoring Form
             </Button>
           </div>
           <nav className="mt-2 px-2">
