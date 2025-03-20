@@ -123,6 +123,40 @@ const locationData = {
     "Mya",
     "Bobby Berry",
   ],
+  Centralia: [
+    "Vanessa Palomares",
+    "Maleia Harmon",
+    "Cailee Reid",
+    "Gus Robles-Diaz",
+    "Bailey Chambers",
+    "Christian Phillips",
+    "Nick Lock",
+    "Kyle Johnstone",
+    "Maya Haines",
+    "Amelia Venard",
+    "Tara Calvert",
+    "Jaysten Barada",
+    "Daniel Abarta",
+    "Brenna Sullivan",
+    "Scarlette Hopper",
+    "Chelsea Sampson",
+    "Tyson Ervin",
+    "Jackie Palomares",
+    "Sarah Vanhousen",
+    "Jesusa Francisco",
+    "Kadin Wilson",
+    "Brody Turner",
+    "Destannhy Hildago",
+    "Mirella Vasquez",
+    "Joshua Ritzman",
+    "Maleia Harmon",
+    "David Romero",
+    "Jonas Howard",
+    "Jillian Clevenger",
+    "Megan Sund",
+    "Kyle Johnstone",
+],
+
 }
 
 // Add this function after the locationData declaration
@@ -621,11 +655,11 @@ export default function OrderSystem() {
         </div>
         <div className="border-t p-4">
           <div className="flex items-center text-gray-700 mb-2">
-            <Bell className="w-5 h-5 mb-2" />
+            <Bell className="w-5 h-5 mr-2" />
             <span className="text-sm">Notifications</span>
           </div>
           <div className="flex items-center text-gray-700">
-            <Settings className="w-5 h-5 mb-2" />
+            <Settings className="w-5 h-5 mr-2" />
             <span className="text-sm">Settings</span>
           </div>
         </div>
