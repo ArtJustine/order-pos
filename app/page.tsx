@@ -1,18 +1,18 @@
 "use client"
 
 import Image from "next/image"
-import { Search, ChevronDown, Bell, Settings, X } from "lucide-react"
+import { Search, ChevronDown, Bell, Settings, X, Download } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import React from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
 // Add these imports at the top of the file
-import { CalendarIcon, Edit, Trash2 } from "lucide-react"
+import { CalendarIcon, Edit, Trash2 } from 'lucide-react'
 import { format } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 
 // Product data for each category
 const productData = {
@@ -123,6 +123,101 @@ const locationData = {
     "Mya",
     "Bobby Berry",
   ],
+  Centralia: [
+    "Vanessa Palomares",
+    "Maleia Harmon",
+    "Cailee Reid",
+    "Gus Robles-Diaz",
+    "Bailey Chambers",
+    "Christian Phillips",
+    "Nick Lock",
+    "Kyle Johnstone",
+    "Maya Haines",
+    "Amelia Venard",
+    "Tara Calvert",
+    "Jaysten Barada",
+    "Daniel Abarta",
+    "Brenna Sullivan",
+    "Scarlette Hopper",
+    "Chelsea Sampson",
+    "Tyson Ervin",
+    "Jackie Palomares",
+    "Sarah Vanhousen",
+    "Jesusa Francisco",
+    "Kadin Wilson",
+    "Brody Turner",
+    "Destannhy Hildago",
+    "Mirella Vasquez",
+    "Joshua Ritzman",
+    "Maleia Harmon",
+    "David Romero",
+    "Jonas Howard",
+    "Jillian Clevenger",
+    "Megan Sund",
+    "Kyle Johnstone",
+],
+
+}
+
+// Add this function after the locationData declaration
+const getSizeOptions = (category) => {
+  switch (category) {
+    case "cones":
+      return [
+        { value: "S", label: "S" },
+        { value: "M", label: "M" },
+        { value: "L", label: "L" },
+      ]
+    case "chicken":
+      return [
+        { value: "Both", label: "Fries & Drink" },
+        { value: "Fries", label: "Fries Only" },
+        { value: "Drink", label: "Drink Only" },
+      ]
+    case "sandwich":
+      return [
+        { value: "Single", label: "Single" },
+        { value: "Double", label: "Double" },
+        { value: "Triple", label: "Triple" },
+      ]
+    case "sides":
+      return [
+        { value: "Regular", label: "Regular" },
+        { value: "Large", label: "Large" },
+      ]
+    default:
+      return [
+        { value: "No", label: "No" },
+        { value: "Mini", label: "Mini" },
+        { value: "S", label: "S" },
+        { value: "M", label: "M" },
+        { value: "L", label: "L" },
+      ]
+  }
+}
+
+// Define a type for event data
+type EventData = {
+  date: Date;
+  startTime: string;
+  endTime: string;
+  employee: string;
+  location: string;
+  items: any[];
+  summary: {
+    itemsNotUpdated: number;
+    upsell: {
+      chance: number;
+      offered: number;
+      successful: number;
+    };
+    upsize: {
+      chance: number;
+      offered: number;
+      successful: number;
+    };
+    totalItems: number;
+  };
 }
 
 export default function OrderSystem() {
@@ -144,6 +239,7 @@ export default function OrderSystem() {
 
   // Add state for time dropdowns at the top of the OrderSystem component
   const [startTime, setStartTime] = React.useState("09:00")
+  const [startTimeChanged, setStartTimeChanged] = React.useState(false)
   const [endTime, setEndTime] = React.useState("17:00")
   const [showStartTimeDropdown, setShowStartTimeDropdown] = React.useState(false)
   const [showEndTimeDropdown, setShowEndTimeDropdown] = React.useState(false)
@@ -160,6 +256,12 @@ export default function OrderSystem() {
   const [showCalendar, setShowCalendar] = React.useState(false)
   const [employeeFilter, setEmployeeFilter] = React.useState("")
   const [filteredEmployees, setFilteredEmployees] = React.useState(locationData["Fuquay"])
+
+  // Add a new state variable for event count after the other state declarations in OrderSystem
+  const [eventCount, setEventCount] = React.useState(0)
+  
+  // Add state to store submitted events
+  const [submittedEvents, setSubmittedEvents] = React.useState<EventData[]>([])
 
   const [activeCategory, setActiveCategory] = React.useState("blizzards")
 
@@ -190,6 +292,12 @@ export default function OrderSystem() {
     setShowEmployeeDropdown(false)
   }
 
+  // Function to handle start time change
+  const handleStartTimeChange = (e) => {
+    setStartTime(e.target.value)
+    setStartTimeChanged(true)
+  }
+
   // Replace the updateOrderSummary function with this enhanced version
   const updateOrderSummary = (
     category,
@@ -202,6 +310,7 @@ export default function OrderSystem() {
     otherSizesAgreed,
     toppingsAgreed,
     name,
+    additionalInfo = {},
   ) => {
     // Create a new order item
     const newItem = {
@@ -217,6 +326,7 @@ export default function OrderSystem() {
       largeAgreed,
       otherSizesAgreed,
       toppingsAgreed,
+      ...additionalInfo,
     }
 
     // Add to order items
@@ -267,8 +377,53 @@ export default function OrderSystem() {
     })
   }
 
-  // Add these functions after the updateOrderSummary function
+  // Update the handleRemoveItem function to also update the orderSummary
   const handleRemoveItem = (itemId) => {
+    // Find the item to be removed
+    const itemToRemove = orderItems.find(item => item.id === itemId)
+    
+    if (itemToRemove) {
+      // Update the order summary by subtracting the item's values
+      setOrderSummary(prev => {
+        const newSummary = { ...prev }
+        
+        // Subtract from total items
+        newSummary.totalItems -= itemToRemove.quantity
+        
+        // If it was a "No" size item, update itemsNotUpdated
+        if (itemToRemove.size === "No") {
+          newSummary.itemsNotUpdated -= itemToRemove.quantity
+          
+          // Update upsize stats
+          newSummary.upsize.chance -= itemToRemove.quantity
+          
+          if (itemToRemove.offeredLarge || itemToRemove.offeredOtherSizes) {
+            newSummary.upsize.offered -= itemToRemove.quantity
+            
+            if (itemToRemove.largeAgreed || itemToRemove.otherSizesAgreed) {
+              newSummary.upsize.successful -= itemToRemove.quantity
+            }
+          }
+        }
+        
+        // For blizzards, update upsell stats
+        if (itemToRemove.category === "blizzards" && hasToppings(itemToRemove.category)) {
+          newSummary.upsell.chance -= itemToRemove.quantity
+          
+          if (itemToRemove.offeredToppings) {
+            newSummary.upsell.offered -= itemToRemove.quantity
+            
+            if (itemToRemove.toppingsAgreed) {
+              newSummary.upsell.successful -= itemToRemove.quantity
+            }
+          }
+        }
+        
+        return newSummary
+      })
+    }
+    
+    // Remove the item from orderItems
     setOrderItems((prev) => prev.filter((item) => item.id !== itemId))
   }
 
@@ -278,21 +433,24 @@ export default function OrderSystem() {
     handleRemoveItem(itemId)
   }
 
+  // Modify the handleSubmitEvent function to store events instead of downloading
   const handleSubmitEvent = () => {
-    // Generate CSV data
-    const csvData = generateCsvData()
-
-    // Create a blob and download link
-    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement("a")
-    link.href = url
-    link.setAttribute("download", `event_summary_${format(eventDate, "yyyy-MM-dd")}.csv`)
-    document.body.appendChild(link)
-    link.click()
-
-    // Clean up
-    document.body.removeChild(link)
+    // Create event data object
+    const eventData: EventData = {
+      date: eventDate,
+      startTime,
+      endTime,
+      employee: selectedEmployee,
+      location: selectedLocation,
+      items: [...orderItems],
+      summary: { ...orderSummary }
+    }
+    
+    // Add to submitted events
+    setSubmittedEvents(prev => [...prev, eventData])
+    
+    // Increment event count
+    setEventCount(prevCount => prevCount + 1)
 
     // Reset the form
     setOrderItems([])
@@ -311,8 +469,28 @@ export default function OrderSystem() {
       totalItems: 0,
     })
   }
+  
+  // Add a function to handle exporting all events
+  const handleExportEvents = () => {
+    if (submittedEvents.length === 0) return
+    
+    // Generate CSV data for all events
+    const csvData = generateCsvDataForAllEvents()
+    
+    // Create a blob and download link
+    const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.setAttribute("download", `event_summary_export_${format(new Date(), "yyyy-MM-dd")}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    
+    // Clean up
+    document.body.removeChild(link)
+  }
 
-  const generateCsvData = () => {
+  const generateCsvData = (event: EventData) => {
     // Create CSV header row based on the format provided
     const headers =
       "Entry#,Event Date,ORDER TIME Start Time,ORDER TIME End Time,Count of Sec,Camera,Why was there No Warm Greeting?,Why didn't they upsell?,Why didnt they repeat the order?,Was Customer Loyalty Offered?,Why was there no Thank you?,Was the app scanned for loylaty?,Video Links,Client Employee,Total Count of Ordered Items,Count of Successful Upsell Items,When they offered the Combo and the customer refused did they offer the drink?,Count of items upsold and not upsized,Count of chances to add an item,Chance to offer (Item),How many were offered an Upsell,Offered Item/s,How many was Successful?,Successful Upsell Item"
@@ -320,9 +498,9 @@ export default function OrderSystem() {
     // Create data row
     const data = [
       "1", // Entry#
-      format(eventDate, "MM/dd/yyyy"), // Event Date
-      `${startTime}:00`, // Start Time with seconds
-      `${endTime}:00`, // End Time with seconds
+      format(event.date, "MM/dd/yyyy"), // Event Date
+      `${event.startTime}:00`, // Start Time with seconds
+      `${event.endTime}:00`, // End Time with seconds
       "", // Count of Sec
       "", // Camera
       "", // Why was there No Warm Greeting?
@@ -332,26 +510,71 @@ export default function OrderSystem() {
       "", // Why was there no Thank you?
       "", // Was the app scanned for loylaty?
       "", // Video Links
-      selectedEmployee, // Client Employee
-      orderSummary.totalItems, // Total Count of Ordered Items
-      orderSummary.upsell.successful, // Count of Successful Upsell Items
+      event.employee, // Client Employee
+      event.summary.totalItems, // Total Count of Ordered Items
+      event.summary.upsell.successful, // Count of Successful Upsell Items
       "", // When they offered the Combo and the customer refused, did they offer the drink?
-      orderSummary.itemsNotUpdated, // Count of items upsold and not upsized
-      orderSummary.upsell.chance, // Count of chances to add an item
+      event.summary.itemsNotUpdated, // Count of items upsold and not upsized
+      event.summary.upsell.chance, // Count of chances to add an item
       "", // Chance to offer (Item)
-      orderSummary.upsell.offered, // How many were offered an Upsell
-      orderItems
+      event.summary.upsell.offered, // How many were offered an Upsell
+      event.items
         .filter((i) => i.offeredToppings)
         .map((i) => i.name)
         .join(", "), // Offered Item/s
-      orderSummary.upsell.successful, // How many was Successful?
-      orderItems
+      event.summary.upsell.successful, // How many was Successful?
+      event.items
         .filter((i) => i.toppingsAgreed)
         .map((i) => i.name)
         .join(", "), // Successful Upsell Item
     ].join(",")
 
     return headers + "\n" + data
+  }
+  
+  // Function to generate CSV for all events
+  const generateCsvDataForAllEvents = () => {
+    // Create CSV header row
+    const headers =
+      "Entry#,Event Date,ORDER TIME Start Time,ORDER TIME End Time,Count of Sec,Camera,Why was there No Warm Greeting?,Why didn't they upsell?,Why didnt they repeat the order?,Was Customer Loyalty Offered?,Why was there no Thank you?,Was the app scanned for loylaty?,Video Links,Client Employee,Total Count of Ordered Items,Count of Successful Upsell Items,When they offered the Combo and the customer refused did they offer the drink?,Count of items upsold and not upsized,Count of chances to add an item,Chance to offer (Item),How many were offered an Upsell,Offered Item/s,How many was Successful?,Successful Upsell Item"
+
+    // Create data rows for each event
+    const dataRows = submittedEvents.map((event, index) => {
+      return [
+        index + 1, // Entry#
+        format(event.date, "MM/dd/yyyy"), // Event Date
+        `${event.startTime}:00`, // Start Time with seconds
+        `${event.endTime}:00`, // End Time with seconds
+        "", // Count of Sec
+        "", // Camera
+        "", // Why was there No Warm Greeting?
+        "", // Why didn't they upsell?
+        "", // Why didnt they repeat the order?
+        "", // Was Customer Loyalty Offered?
+        "", // Why was there no Thank you?
+        "", // Was the app scanned for loylaty?
+        "", // Video Links
+        event.employee, // Client Employee
+        event.summary.totalItems, // Total Count of Ordered Items
+        event.summary.upsell.successful, // Count of Successful Upsell Items
+        "", // When they offered the Combo and the customer refused, did they offer the drink?
+        event.summary.itemsNotUpdated, // Count of items upsold and not upsized
+        event.summary.upsell.chance, // Count of chances to add an item
+        "", // Chance to offer (Item)
+        event.summary.upsell.offered, // How many were offered an Upsell
+        event.items
+          .filter((i) => i.offeredToppings)
+          .map((i) => i.name)
+          .join("; "), // Offered Item/s
+        event.summary.upsell.successful, // How many was Successful?
+        event.items
+          .filter((i) => i.toppingsAgreed)
+          .map((i) => i.name)
+          .join("; "), // Successful Upsell Item
+      ].join(",")
+    })
+
+    return headers + "\n" + dataRows.join("\n")
   }
 
   // Add this function after the handleLocationChange function
@@ -368,13 +591,16 @@ export default function OrderSystem() {
     }
   }
 
+  // Check if Submit button should be enabled
+  const isSubmitEnabled = startTimeChanged && orderItems.length > 0
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <div className="w-[205px] bg-white border-r flex flex-col">
         <div className="p-4 border-b">
           <Image
-            src="/logo1.png"
+            src="/logo2.svg"
             alt="Hoptix Logo"
             width={100}
             height={40}
@@ -387,6 +613,7 @@ export default function OrderSystem() {
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
                 <path d="M3 9H21" stroke="currentColor" strokeWidth="2" />
+                <path d="M3 9H21" stroke="currentColor" strokeWidth="2" />
                 <path d="M9 21V9" stroke="currentColor" strokeWidth="2" />
               </svg>
               Dashboard
@@ -396,6 +623,7 @@ export default function OrderSystem() {
             <div className="px-2 py-2 text-sm flex items-center text-blue-900 font-medium">
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" />
+                <path d="M3 9H21" stroke="currentColor" strokeWidth="2" />
                 <path d="M8 10H16" stroke="currentColor" strokeWidth="2" />
                 <path d="M8 14H16" stroke="currentColor" strokeWidth="2" />
               </svg>
@@ -420,12 +648,12 @@ export default function OrderSystem() {
           </nav>
         </div>
         <div className="border-t p-4">
-          <div className="flex items-center justify-between text-gray-700 mb-2">
-            <Bell className="w-5 h-5" />
+          <div className="flex items-center text-gray-700 mb-2">
+            <Bell className="w-5 h-5 mr-2" />
             <span className="text-sm">Notifications</span>
           </div>
-          <div className="flex items-center justify-between text-gray-700">
-            <Settings className="w-5 h-5" />
+          <div className="flex items-center text-gray-700">
+            <Settings className="w-5 h-5 mr-2" />
             <span className="text-sm">Settings</span>
           </div>
         </div>
@@ -457,9 +685,7 @@ export default function OrderSystem() {
             </PopoverContent>
           </Popover>
 
-          <Button variant="outline" className="text-sm">
-            Pause Event
-          </Button>
+          
 
           {/* Replace the Start Time div with this */}
           <div className="relative">
@@ -486,7 +712,7 @@ export default function OrderSystem() {
                     type="time"
                     step="1"
                     value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
+                    onChange={handleStartTimeChange}
                     className="mb-2"
                   />
                   <Button size="sm" className="w-full" onClick={() => setShowStartTimeDropdown(false)}>
@@ -533,6 +759,8 @@ export default function OrderSystem() {
             )}
           </div>
 
+          
+
           {/* Replace the Employee dropdown with this */}
           <div className="relative">
             <div
@@ -575,6 +803,10 @@ export default function OrderSystem() {
               </div>
             )}
           </div>
+
+          <Button variant="outline" className="text-sm">
+            Pause Event
+          </Button>
 
           <div className="relative ml-auto">
             <div
@@ -766,6 +998,11 @@ export default function OrderSystem() {
                         <div className="text-xs text-gray-600">
                           Qty: {item.quantity} • Size: {item.size}
                           {item.toppings && " • Extra Toppings"}
+                          {item.selectedSide && item.selectedSide !== "None" && ` • Side: ${item.selectedSide}`}
+                          {item.offeredLargeChicken &&
+                            ` • ${item.largeChickenAgreed ? "Large Accepted" : "Large Declined"}`}
+                          {item.offeredLargeDrink &&
+                            ` • ${item.largeDrinkAgreed ? "Large Drink Accepted" : "Large Drink Declined"}`}
                         </div>
                       </div>
                     ))}
@@ -773,9 +1010,32 @@ export default function OrderSystem() {
                 )}
               </div>
 
-              <Button className="w-full bg-blue-900 hover:bg-blue-800" onClick={handleSubmitEvent}>
-                Submit Event
-              </Button>
+              <div className="relative space-y-2">
+                <Button 
+                  className="w-full bg-blue-900 hover:bg-blue-800" 
+                  onClick={handleSubmitEvent}
+                  disabled={!isSubmitEnabled}
+                >
+                  Submit Event
+                </Button>
+                
+                <Button 
+                  className="w-full flex items-center justify-center gap-2" 
+                  variant="outline"
+                  onClick={handleExportEvents}
+                  disabled={submittedEvents.length === 0}
+                >
+                  <Download size={16} />
+                  Export Events ({submittedEvents.length})
+                </Button>
+                
+                <div className="absolute bottom-[-90px] right-0 bg-blue-100 text-blue-900 px-3 py-1 rounded-md text-sm font-medium flex items-center">
+                  <span className="mr-1">Events:</span>
+                  <span className="bg-blue-900 text-white rounded-full w-6 h-6 flex items-center justify-center">
+                    {eventCount}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -784,11 +1044,13 @@ export default function OrderSystem() {
   )
 }
 
+// Replace the ProductCard component with this updated version
 function ProductCard({ name, image, category, hasToppings, updateOrderSummary }) {
   const [quantity, setQuantity] = React.useState(0)
-  const [selectedSize, setSelectedSize] = React.useState("No")
+  const sizeOptions = getSizeOptions(category)
+  const [selectedSize, setSelectedSize] = React.useState(sizeOptions[0].value)
   const [showModal, setShowModal] = React.useState(false)
-  const [modalType, setModalType] = React.useState("upsell") // "upsell" or "toppings"
+  const [modalType, setModalType] = React.useState("upsell") // "upsell", "toppings", "chicken", "sandwich"
   const [offeredLarge, setOfferedLarge] = React.useState(false)
   const [offeredOtherSizes, setOfferedOtherSizes] = React.useState(false)
   const [offeredToppings, setOfferedToppings] = React.useState(false)
@@ -798,6 +1060,16 @@ function ProductCard({ name, image, category, hasToppings, updateOrderSummary })
   const [otherSizesAgreed, setOtherSizesAgreed] = React.useState(false)
   const [toppingsAgreed, setToppingsAgreed] = React.useState(false)
 
+  // Add state for chicken basket
+  const [offeredLargeChicken, setOfferedLargeChicken] = React.useState(false)
+  const [largeChickenAgreed, setLargeChickenAgreed] = React.useState(false)
+
+  // Add state for sandwich
+  const [offeredSidesAndDrinks, setOfferedSidesAndDrinks] = React.useState(false)
+  const [selectedSide, setSelectedSide] = React.useState("None")
+  const [offeredLargeDrink, setOfferedLargeDrink] = React.useState(false)
+  const [largeDrinkAgreed, setLargeDrinkAgreed] = React.useState(false)
+
   React.useEffect(() => {
     if (!showModal) {
       setOfferedLarge(false)
@@ -806,6 +1078,12 @@ function ProductCard({ name, image, category, hasToppings, updateOrderSummary })
       setLargeAgreed(false)
       setOtherSizesAgreed(false)
       setToppingsAgreed(false)
+      setOfferedLargeChicken(false)
+      setLargeChickenAgreed(false)
+      setOfferedSidesAndDrinks(false)
+      setSelectedSide("None")
+      setOfferedLargeDrink(false)
+      setLargeDrinkAgreed(false)
     }
   }, [showModal])
 
@@ -821,24 +1099,38 @@ function ProductCard({ name, image, category, hasToppings, updateOrderSummary })
 
   const handleAddClick = () => {
     if (quantity > 0) {
-      if (selectedSize === "No") {
+      if (category === "blizzards" && selectedSize === "No") {
         setModalType("upsell")
         setShowModal(true)
+      } else if (category === "chicken") {
+        setModalType("chicken")
+        setShowModal(true)
+      } else if (category === "sandwich") {
+        setModalType("sandwich")
+        setShowModal(true)
+      } else if (hasToppings) {
+        setModalType("toppings")
+        setShowModal(true)
       } else {
-        if (hasToppings) {
-          setModalType("toppings")
-          setShowModal(true)
-        } else {
-          // For categories without toppings, just add the item without a modal
-          updateOrderSummary(category, selectedSize, quantity, false, false, false, false, false, false, name)
-          console.log(`Added ${name} (${selectedSize}) x${quantity}`)
-        }
+        // For categories without toppings, just add the item without a modal
+        updateOrderSummary(category, selectedSize, quantity, false, false, false, false, false, false, name)
+        console.log(`Added ${name} (${selectedSize}) x${quantity}`)
       }
     }
   }
 
   // Add a function to handle the Add Item button in the modal
   const handleAddItemFromModal = () => {
+    // Include additional information for chicken and sandwich in the order summary
+    const additionalInfo = {
+      offeredLargeChicken,
+      largeChickenAgreed,
+      offeredSidesAndDrinks,
+      selectedSide,
+      offeredLargeDrink,
+      largeDrinkAgreed,
+    }
+
     updateOrderSummary(
       category,
       selectedSize,
@@ -850,6 +1142,7 @@ function ProductCard({ name, image, category, hasToppings, updateOrderSummary })
       otherSizesAgreed,
       toppingsAgreed,
       name,
+      additionalInfo,
     )
     setShowModal(false)
   }
@@ -882,47 +1175,18 @@ function ProductCard({ name, image, category, hasToppings, updateOrderSummary })
         </Button>
       </div>
 
-      <div className="flex justify-center gap-1">
-        <Button
-          variant={selectedSize === "No" ? "default" : "outline"}
-          size="sm"
-          className={`text-xs px-2 py-1 h-6 rounded-md ${selectedSize === "No" ? "bg-blue-900" : ""}`}
-          onClick={() => handleSizeClick("No")}
-        >
-          No
-        </Button>
-        <Button
-          variant={selectedSize === "Mini" ? "default" : "outline"}
-          size="sm"
-          className={`text-xs px-2 py-1 h-6 rounded-md ${selectedSize === "Mini" ? "bg-blue-900" : ""}`}
-          onClick={() => handleSizeClick("Mini")}
-        >
-          Mini
-        </Button>
-        <Button
-          variant={selectedSize === "S" ? "default" : "outline"}
-          size="sm"
-          className={`text-xs px-2 py-1 h-6 rounded-md ${selectedSize === "S" ? "bg-blue-900" : ""}`}
-          onClick={() => handleSizeClick("S")}
-        >
-          S
-        </Button>
-        <Button
-          variant={selectedSize === "M" ? "default" : "outline"}
-          size="sm"
-          className={`text-xs px-2 py-1 h-6 rounded-md ${selectedSize === "M" ? "bg-blue-900" : ""}`}
-          onClick={() => handleSizeClick("M")}
-        >
-          M
-        </Button>
-        <Button
-          variant={selectedSize === "L" ? "default" : "outline"}
-          size="sm"
-          className={`text-xs px-2 py-1 h-6 rounded-md ${selectedSize === "L" ? "bg-blue-900" : ""}`}
-          onClick={() => handleSizeClick("L")}
-        >
-          L
-        </Button>
+      <div className="flex justify-center gap-1 flex-wrap">
+        {sizeOptions.map((option) => (
+          <Button
+            key={option.value}
+            variant={selectedSize === option.value ? "default" : "outline"}
+            size="sm"
+            className={`text-xs px-2 py-1 h-6 rounded-md ${selectedSize === option.value ? "bg-blue-900" : ""}`}
+            onClick={() => handleSizeClick(option.value)}
+          >
+            {option.label}
+          </Button>
+        ))}
       </div>
 
       <div className="text-center text-xs text-gray-500 mt-1">Sizes</div>
@@ -1147,7 +1411,7 @@ function ProductCard({ name, image, category, hasToppings, updateOrderSummary })
                   </>
                 )}
               </>
-            ) : (
+            ) : modalType === "toppings" ? (
               <>
                 {/* Only show toppings question for applicable categories */}
                 {hasToppings && (
@@ -1220,7 +1484,237 @@ function ProductCard({ name, image, category, hasToppings, updateOrderSummary })
                   </>
                 )}
               </>
-            )}
+            ) : modalType === "chicken" ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Did employee offer Large?</span>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="radio"
+                        id="chicken-large-yes"
+                        name="chicken-large"
+                        className="h-4 w-4"
+                        onChange={() => setOfferedLargeChicken(true)}
+                        checked={offeredLargeChicken}
+                      />
+                      <Label htmlFor="chicken-large-yes" className="text-sm">
+                        Yes
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="radio"
+                        id="chicken-large-no"
+                        name="chicken-large"
+                        className="h-4 w-4"
+                        onChange={() => setOfferedLargeChicken(false)}
+                        checked={!offeredLargeChicken}
+                      />
+                      <Label htmlFor="chicken-large-no" className="text-sm">
+                        No
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+
+                {offeredLargeChicken && (
+                  <div className="flex items-center justify-between ml-6">
+                    <span className="text-sm">Did the customer accept?</span>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="radio"
+                          id="chicken-large-accept-yes"
+                          name="chicken-large-accept"
+                          className="h-4 w-4"
+                          checked={largeChickenAgreed}
+                          onChange={() => setLargeChickenAgreed(true)}
+                        />
+                        <Label htmlFor="chicken-large-accept-yes" className="text-sm">
+                          Yes
+                        </Label>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="radio"
+                          id="chicken-large-accept-no"
+                          name="chicken-large-accept"
+                          className="h-4 w-4"
+                          checked={!largeChickenAgreed}
+                          onChange={() => setLargeChickenAgreed(false)}
+                        />
+                        <Label htmlFor="chicken-large-accept-no" className="text-sm">
+                          No
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : modalType === "sandwich" ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Did employee ask if they want sides and drinks?</span>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="radio"
+                        id="sides-drinks-yes"
+                        name="sides-drinks"
+                        className="h-4 w-4"
+                        onChange={() => setOfferedSidesAndDrinks(true)}
+                        checked={offeredSidesAndDrinks}
+                      />
+                      <Label htmlFor="sides-drinks-yes" className="text-sm">
+                        Yes
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="radio"
+                        id="sides-drinks-no"
+                        name="sides-drinks"
+                        className="h-4 w-4"
+                        onChange={() => setOfferedSidesAndDrinks(false)}
+                        checked={!offeredSidesAndDrinks}
+                      />
+                      <Label htmlFor="sides-drinks-no" className="text-sm">
+                        No
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+
+                {offeredSidesAndDrinks && (
+                  <>
+                    <div className="ml-6">
+                      <span className="text-sm block mb-2">What side did they choose?</span>
+                      <div className="grid grid-cols-1 gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="radio"
+                            id="side-none"
+                            name="side-choice"
+                            className="h-4 w-4"
+                            checked={selectedSide === "None"}
+                            onChange={() => setSelectedSide("None")}
+                          />
+                          <Label htmlFor="side-none" className="text-sm">
+                            None
+                          </Label>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="radio"
+                            id="side-fries"
+                            name="side-choice"
+                            className="h-4 w-4"
+                            checked={selectedSide === "French Fries"}
+                            onChange={() => setSelectedSide("French Fries")}
+                          />
+                          <Label htmlFor="side-fries" className="text-sm">
+                            French Fries
+                          </Label>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="radio"
+                            id="side-curds"
+                            name="side-choice"
+                            className="h-4 w-4"
+                            checked={selectedSide === "Cheese Curds"}
+                            onChange={() => setSelectedSide("Cheese Curds")}
+                          />
+                          <Label htmlFor="side-curds" className="text-sm">
+                            Cheese Curds
+                          </Label>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="radio"
+                            id="side-rings"
+                            name="side-choice"
+                            className="h-4 w-4"
+                            checked={selectedSide === "Onion Rings"}
+                            onChange={() => setSelectedSide("Onion Rings")}
+                          />
+                          <Label htmlFor="side-rings" className="text-sm">
+                            Onion Rings
+                          </Label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between ml-6">
+                      <span className="text-sm">Did employee ask to go large for drinks?</span>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="radio"
+                            id="large-drink-yes"
+                            name="large-drink"
+                            className="h-4 w-4"
+                            onChange={() => setOfferedLargeDrink(true)}
+                            checked={offeredLargeDrink}
+                          />
+                          <Label htmlFor="large-drink-yes" className="text-sm">
+                            Yes
+                          </Label>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="radio"
+                            id="large-drink-no"
+                            name="large-drink"
+                            className="h-4 w-4"
+                            onChange={() => setOfferedLargeDrink(false)}
+                            checked={!offeredLargeDrink}
+                          />
+                          <Label htmlFor="large-drink-no" className="text-sm">
+                            No
+                          </Label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {offeredLargeDrink && (
+                      <div className="flex items-center justify-between ml-12">
+                        <span className="text-sm">Did the customer agree?</span>
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="radio"
+                              id="large-drink-agree-yes"
+                              name="large-drink-agree"
+                              className="h-4 w-4"
+                              checked={largeDrinkAgreed}
+                              onChange={() => setLargeDrinkAgreed(true)}
+                            />
+                            <Label htmlFor="large-drink-agree-yes" className="text-sm">
+                              Yes
+                            </Label>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              type="radio"
+                              id="large-drink-agree-no"
+                              name="large-drink-agree"
+                              className="h-4 w-4"
+                              checked={!largeDrinkAgreed}
+                              onChange={() => setLargeDrinkAgreed(false)}
+                            />
+                            <Label htmlFor="large-drink-agree-no" className="text-sm">
+                              No
+                            </Label>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            ) : null}
 
             <div className="flex justify-center mt-4">
               <Button className="bg-gray-300 hover:bg-gray-400 text-black" onClick={handleAddItemFromModal}>
@@ -1233,4 +1727,3 @@ function ProductCard({ name, image, category, hasToppings, updateOrderSummary })
     </div>
   )
 }
-
