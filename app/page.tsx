@@ -19,7 +19,7 @@ const productData = {
   blizzards: [
     { name: "Oreo Blizzard", image: "/placeholder.svg?height=150&width=150" },
     { name: "Reese's Peanut Buttercup Blizzard", image: "/placeholder.svg?height=150&width=150" },
-    { name: "Butterfinger Blizzard", image: "/Butterfinger_blizz (1).png?height=150&width=150" },
+    { name: "Butterfinger Blizzard", image: "/Butterfinger_Blizz (1).png?height=150&width=150" },
     { name: "M&M Blizzard", image: "/mm-blizzard (1).png?height=150&width=150" },
     { name: "Heath Blizzard", image: "/Heath_blizz.png?height=150&width=150" },
     { name: "Snickers Blizzard", image: "/Snickers_Blizz.png?height=150&width=150" },
