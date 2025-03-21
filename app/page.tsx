@@ -21,7 +21,7 @@ const productData = {
     { name: "Reese's Peanut Buttercup Blizzard", image: "/placeholder.svg?height=150&width=150" },
     { name: "Butterfinger Blizzard", image: "/Butterfinger_Blizz (1).png?height=150&width=150" },
     { name: "M&M Blizzard", image: "/mm-blizzard (1).png?height=150&width=150" },
-    { name: "Heath Blizzard", image: "/Heath_blizz.png?height=150&width=150" },
+    { name: "Heath Blizzard", image: "/Heath_Blizz.png?height=150&width=150" },
     { name: "Snickers Blizzard", image: "/Snickers_Blizz.png?height=150&width=150" },
     { name: "Royal Reese's Fluffernutter", image: "/royal_reese_fluffernutter_blizzard_treat.png?height=150&width=150" },
     { name: "Royal Ney York Cheesecake", image: "/royal-new-york-cheesecake-strawberry-blizzard.png?height=150&width=150" },
