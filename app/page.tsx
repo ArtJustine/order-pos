@@ -1282,8 +1282,7 @@ function ProductCard({ name, image, category, hasToppings, updateOrderSummary })
       </div>
 
       <div className="text-center mb-2">
-        <Button variant="outline" className="bg-white w-[100px] h-[33px] flex items-center 
-          justify-center hover:bg-[#123358] hover:text-white transition-colors" 
+        <Button variant="outline" className="bg-white w-[100px] h-[33px] hover:bg-[#123358] hover:text-white transition-colors" 
           onClick={handleAddClick}
         >
           Add
