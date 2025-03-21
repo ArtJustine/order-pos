@@ -241,11 +241,43 @@ export default function OrderSystem() {
   // Add a formValid state after the completedEvents state declaration
   const [formValid, setFormValid] = React.useState(false)
 
+  // Add these new state variables after the other state declarations in OrderSystem
+  const [timerActive, setTimerActive] = React.useState(false)
+  const [timerPaused, setTimerPaused] = React.useState(false)
+  const [timerStartTime, setTimerStartTime] = React.useState(null)
+  const [timerPauseTime, setTimerPauseTime] = React.useState(null)
+  const [elapsedTime, setElapsedTime] = React.useState(0)
+  const [completedTaskTime, setCompletedTaskTime] = React.useState(null)
+
   // Add this useEffect to check if the form is valid whenever dependencies change
   React.useEffect(() => {
     // Form is valid if startTime is set and at least one order item exists
     setFormValid(startTime !== "" && orderItems.length > 0)
   }, [startTime, orderItems])
+
+  // Add this useEffect to handle the timer functionality
+  React.useEffect(() => {
+    let interval
+
+    if (timerActive && !timerPaused) {
+      interval = setInterval(() => {
+        const now = Date.now()
+        const elapsed = now - timerStartTime + elapsedTime
+        setElapsedTime(elapsed)
+      }, 1000)
+    }
+
+    return () => clearInterval(interval)
+  }, [timerActive, timerPaused, timerStartTime, elapsedTime])
+
+  // Add this useEffect to check if we've reached 20 events
+  React.useEffect(() => {
+    if (eventCount === 20 && timerActive) {
+      setTimerActive(false)
+      setCompletedTaskTime(elapsedTime)
+      alert(`Task completed! Total time: ${formatTime(elapsedTime)}`)
+    }
+  }, [eventCount, timerActive, elapsedTime])
 
   // Add a searchTerm state after the activeCategory state
   const [activeCategory, setActiveCategory] = React.useState("blizzards")
@@ -460,6 +492,22 @@ export default function OrderSystem() {
     handleRemoveItem(itemId)
   }
 
+  // Add this function to format milliseconds into a readable time string
+  const formatTime = (ms) => {
+    if (!ms) return "00:00:00"
+
+    const totalSeconds = Math.floor(ms / 1000)
+    const hours = Math.floor(totalSeconds / 3600)
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
+    const seconds = totalSeconds % 60
+
+    return [
+      hours.toString().padStart(2, "0"),
+      minutes.toString().padStart(2, "0"),
+      seconds.toString().padStart(2, "0"),
+    ].join(":")
+  }
+
   // Modify the handleSubmitEvent function to increment the event count
   // Modify the handleSubmitEvent function to store the data instead of downloading
   const handleSubmitEvent = () => {
@@ -498,6 +546,22 @@ export default function OrderSystem() {
       },
       totalItems: 0,
     })
+  }
+
+  // Add this function to handle pausing and resuming the timer
+  const handlePauseResumeTimer = () => {
+    if (!timerActive) return
+
+    if (timerPaused) {
+      // Resume timer
+      const pauseDuration = Date.now() - timerPauseTime
+      setTimerStartTime(timerStartTime + pauseDuration)
+      setTimerPaused(false)
+    } else {
+      // Pause timer
+      setTimerPaused(true)
+      setTimerPauseTime(Date.now())
+    }
   }
 
   // Add a new function to handle exporting events
@@ -691,7 +755,10 @@ export default function OrderSystem() {
             </PopoverContent>
           </Popover>
 
-          
+          {/* Replace the Pause Event button with this */}
+          <Button variant="outline" className="text-sm" onClick={handlePauseResumeTimer}>
+            {timerPaused ? "Resume Event" : "Pause Event"}
+          </Button>
 
           {/* Replace the Start Time div with this */}
           <div className="relative">
@@ -850,6 +917,27 @@ export default function OrderSystem() {
               </div>
             )}
           </div>
+        </div>
+        {/* Add this timer display after the top bar */}
+        <div className="bg-white border-b py-2 px-4 flex justify-between items-center">
+          <div className="flex items-center">
+            <span className="text-sm font-medium mr-2">Task Progress:</span>
+            <span className="text-sm">{eventCount} / 20 events</span>
+          </div>
+          <div className="flex items-center">
+            <span className="text-sm font-medium mr-2">Elapsed Time:</span>
+            <span
+              className={`text-sm font-mono ${timerPaused ? "text-orange-500" : timerActive ? "text-green-600" : "text-gray-500"}`}
+            >
+              {formatTime(elapsedTime)}
+            </span>
+          </div>
+          {completedTaskTime && (
+            <div className="flex items-center">
+              <span className="text-sm font-medium mr-2">Completed in:</span>
+              <span className="text-sm font-mono text-blue-600">{formatTime(completedTaskTime)}</span>
+            </div>
+          )}
         </div>
 
         {/* Category Tabs */}
@@ -1057,7 +1145,7 @@ export default function OrderSystem() {
 function ProductCard({ name, image, category, hasToppings, updateOrderSummary }) {
   const [quantity, setQuantity] = React.useState(0)
   const sizeOptions = getSizeOptions(category)
-  const [selectedSize, setSelectedSize] = React.useState(sizeOptions[0].value)
+  const [selectedSize, setSelectedSize] = React.useState("")
   const [showModal, setShowModal] = React.useState(false)
   const [modalType, setModalType] = React.useState("upsell") // "upsell", "toppings", "chicken", "sandwich"
   const [offeredLarge, setOfferedLarge] = React.useState(false)
@@ -1126,7 +1214,11 @@ function ProductCard({ name, image, category, hasToppings, updateOrderSummary })
 
   const handleAddClick = () => {
     if (quantity > 0) {
-      if (category === "blizzards" && selectedSize === "No") {
+      // If no size is selected, use the first size option as default
+      const sizeToUse = selectedSize || sizeOptions[0].value
+
+
+      if (category === "blizzards" && sizeToUse === "No") {
         setModalType("upsell")
         setShowModal(true)
       } else if (category === "chicken") {
@@ -1140,14 +1232,16 @@ function ProductCard({ name, image, category, hasToppings, updateOrderSummary })
         setShowModal(true)
       } else {
         // For categories without toppings, just add the item without a modal
-        updateOrderSummary(category, selectedSize, quantity, false, false, false, false, false, false, name)
-        console.log(`Added ${name} (${selectedSize}) x${quantity}`)
+        updateOrderSummary(category, sizeToUse, quantity, false, false, false, false, false, false, name)
+        console.log(`Added ${name} (${sizeToUse}) x${quantity}`)
       }
     }
   }
 
   // Add a function to handle the Add Item button in the modal
   const handleAddItemFromModal = () => {
+    // If no size is selected, use the first size option as default
+    const sizeToUse = selectedSize || sizeOptions[0].value
     // Include additional information for chicken and sandwich in the order summary
     const additionalInfo = {
       offeredLargeChicken,
@@ -1160,7 +1254,7 @@ function ProductCard({ name, image, category, hasToppings, updateOrderSummary })
 
     updateOrderSummary(
       category,
-      selectedSize,
+      sizeToUse,
       quantity,
       offeredLarge,
       offeredOtherSizes,
@@ -1175,7 +1269,7 @@ function ProductCard({ name, image, category, hasToppings, updateOrderSummary })
   }
 
   const handleSizeClick = (size) => {
-    setSelectedSize(size)
+    setSelectedSize(size === selectedSize ? "" : size)
   }
 
   return (
@@ -1196,11 +1290,11 @@ function ProductCard({ name, image, category, hasToppings, updateOrderSummary })
       <div className="text-center font-medium mb-2">{name}</div>
 
       <div className="flex items-center justify-center gap-2 mb-4">
-        <Button variant="outline" size="icon" className="h-6 w-6 rounded-full" onClick={decreaseQuantity}>
+        <Button variant="outline" size="icon" className="h-6 w-6 rounded-full hover:bg-[#123358] hover:text-white transition-colors" onClick={decreaseQuantity}>
           <span>-</span>
         </Button>
         <span className="w-6 text-center">{quantity}</span>
-        <Button variant="outline" size="icon" className="h-6 w-6 rounded-full" onClick={increaseQuantity}>
+        <Button variant="outline" size="icon" className="h-6 w-6 rounded-full hover:bg-[#123358] hover:text-white transition-colors" onClick={increaseQuantity}>
           <span>+</span>
         </Button>
       </div>
@@ -1211,7 +1305,7 @@ function ProductCard({ name, image, category, hasToppings, updateOrderSummary })
             key={option.value}
             variant={selectedSize === option.value ? "default" : "outline"}
             size="sm"
-            className={`text-xs px-2 py-1 h-6 rounded-md ${selectedSize === option.value ? "bg-blue-900" : ""}`}
+            className={`text-xs px-2 py-1 h-6 rounded-md hover:bg-[#123358] hover:text-white transition-colors ${selectedSize === option.value ? "bg-[#123358] text-white" : ""}`}
             onClick={() => handleSizeClick(option.value)}
           >
             {option.label}
@@ -1747,7 +1841,7 @@ function ProductCard({ name, image, category, hasToppings, updateOrderSummary })
             ) : null}
 
             <div className="flex justify-center mt-4">
-              <Button className="bg-gray-300 hover:bg-gray-400 text-black" onClick={handleAddItemFromModal}>
+              <Button className="bg-gray-300 hover:bg-[#123358] hover:text-white transition-colors text-black" onClick={handleAddItemFromModal}>
                 Add Item
               </Button>
             </div>
@@ -1757,4 +1851,3 @@ function ProductCard({ name, image, category, hasToppings, updateOrderSummary })
     </div>
   )
 }
-
