@@ -755,10 +755,7 @@ export default function OrderSystem() {
             </PopoverContent>
           </Popover>
 
-          {/* Replace the Pause Event button with this */}
-          <Button variant="outline" className="text-sm" onClick={handlePauseResumeTimer}>
-            {timerPaused ? "Resume Event" : "Pause Event"}
-          </Button>
+
 
           {/* Replace the Start Time div with this */}
           <div className="relative">
@@ -875,8 +872,9 @@ export default function OrderSystem() {
             )}
           </div>
 
-          <Button variant="outline" className="text-sm">
-            Pause Event
+          {/* Replace the Pause Event button with this */}
+          <Button variant="outline" className="text-sm" onClick={handlePauseResumeTimer}>
+            {timerPaused ? "Resume Event" : "Pause Event"}
           </Button>
 
           <div className="relative ml-auto">
